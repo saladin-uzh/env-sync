@@ -11,7 +11,7 @@ done
 
 echo "env-sync bootstrap"
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-echo "detected os: \$OS"
+echo "detected os: $OS"
 
 run() {
   if [[ \$DRY_RUN -eq 1 ]]; then
