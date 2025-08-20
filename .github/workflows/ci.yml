@@ -1,0 +1,15 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint-and-dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Shellcheck scripts
+        run: shellcheck ./scripts/*.sh || true
+      - name: Dry-run bootstrap
+        run: ./bootstrap.sh --dry-run

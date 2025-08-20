@@ -1,0 +1,6 @@
+# minimal macOS Brewfile for web-dev
+brew "git"
+brew "node"
+brew "pnpm"
+cask "visual-studio-code"
+cask "warp"

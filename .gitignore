@@ -1,0 +1,6 @@
+# secrets and local state
+secrets.yml
+inventory/*.secret.json
+.env
+.vscode/
+node_modules/
