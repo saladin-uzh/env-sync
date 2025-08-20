@@ -10,3 +10,7 @@ Bootstrap:
 
 Register:
   ./scripts/register.sh --id "laptop-2025" --os "macos" --profile "web-dev"
+
+## For Warp Users
+
+See [WARP.md](WARP.md) for comprehensive guidance on commands, architecture, workflows, and automation rules specific to Warp terminal usage.
