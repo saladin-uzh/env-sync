@@ -1,0 +1,10 @@
+git
+jq
+yq
+fzf
+ripgrep
+fd
+bat
+wget
+htop
+# add others as needed

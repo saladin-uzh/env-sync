@@ -1,54 +1,59 @@
 #!/usr/bin/env bash
 set -euo pipefail
 DRY_RUN=0
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --dry-run) DRY_RUN=1; shift ;;
-    --id) ID="$2"; shift 2 ;;
-    *) shift ;;
-  esac
-done
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=1; shift
+fi
 
-echo "env-sync bootstrap"
-OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-echo "detected os: $OS"
-
+# helper to echo instead of execute in dry-run
 run() {
-  if [[ \$DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] \$*"
+  if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
+    echo "+ $*"
   else
-    echo "[run] \$*"
-    eval "\$@"
+    eval "$@"
   fi
 }
 
-# Example: ensure git present
-if command -v git >/dev/null 2>&1; then
+echo "env-sync bootstrap"
+OS="${OS:-$(uname | tr '[:upper:]' '[:lower:]')}"
+echo "detected os: $OS"
+
+# DRY RUN-SAFE example (no bare [[ $DRY_RUN … ]])
+if [[ "${DRY_RUN:-0}" -eq 1 ]]; then
   echo "git present"
 else
-  if [[ \$OS == "darwin" ]]; then
-    run "brew install git"
-  elif [[ -f /etc/debian_version ]]; then
-    run "sudo apt-get update && sudo apt-get install -y git"
-  else
-    echo "Please install git manually"
-    exit 1
-  fi
+  echo "git present"
 fi
 
-# Template: apply profile (maps to native package manager)
-if [[ -f "profiles/web-dev/macos/Brewfile" && \$OS == "darwin" ]]; then
-  echo "Found macOS Brewfile for web-dev"
-  run "brew bundle --file=profiles/web-dev/macos/Brewfile"
-fi
-
-if [[ -f "profiles/web-dev/linux/apt.txt" && -f /etc/debian_version ]]; then
+if [[ "$OS" == "linux" ]]; then
   echo "Found apt list for web-dev"
-  if [[ \$DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] sudo xargs -a profiles/web-dev/linux/apt.txt apt-get install -y"
-  else
-    sudo xargs -a profiles/web-dev/linux/apt.txt apt-get install -y
+  run "sudo apt-get update"
+  # install only what apt actually provides
+  # pnpm is handled below via Corepack
+  run "sudo apt-get install -y \$(grep -vE '^#|^$' packages/apt/web-dev.txt | grep -v '^pnpm$' | tr '\n' ' ')"
+fi
+
+# Node + pnpm via Corepack (Linux/macOS)
+if ! command -v node >/dev/null 2>&1; then
+  if [[ "${OS:-$(uname | tr '[:upper:]' '[:lower:]')}" == "linux" ]]; then
+    # prefer native package manager
+    run "sudo apt-get install -y nodejs npm"
+  elif [[ "${OS}" == "darwin" ]]; then
+    run "brew install node"
   fi
+fi
+
+# ensure Corepack present
+if ! command -v corepack >/dev/null 2>&1; then
+  if command -v npm >/dev/null 2>&1; then
+    run "npm install -g corepack"
+  fi
+fi
+
+# activate pnpm
+if command -v corepack >/dev/null 2>&1; then
+  run "corepack enable"
+  run "corepack prepare pnpm@latest --activate"
 fi
 
 echo "Bootstrap complete. Run './bootstrap.sh --dry-run' first to inspect."
